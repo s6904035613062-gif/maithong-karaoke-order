@@ -3,25 +3,22 @@
 ระบบสั่งเครื่องดื่ม/อาหารสำหรับร้านคาราโอเกะ "ไมค์ทอง คาราโอเกะ"
 สร้างด้วย Next.js (App Router, JavaScript) และ Supabase, deploy บน Vercel
 
-> ดูรายละเอียดเชิงลึก (โครงสร้างฐานข้อมูล, กฎการคิดเงิน, ข้อควรระวังเรื่อง
-> dynamic route params) ได้ที่ [`CLAUDE.md`](./CLAUDE.md)
+> 📌 ดูบันทึกทางเทคนิคสำหรับ AI/นักพัฒนาที่จะทำงานต่อในโปรเจกต์นี้ที่ [`CLAUDE.md`](./CLAUDE.md)
+> (โครงสร้างฐานข้อมูล, กติกาการคิดเงิน, และข้อควรระวังเรื่อง Dynamic Route params ใน Next.js เวอร์ชันล่าสุด)
 
-## เริ่มต้นใช้งาน
+## เริ่มต้นใช้งาน (Local Development)
 
 1. ติดตั้ง dependencies:
    ```bash
    npm install
    ```
 
-2. คัดลอก `.env.local.example` เป็น `.env.local` แล้วใส่ค่า Supabase ของคุณ:
+2. คัดลอกไฟล์ env:
    ```bash
    cp .env.local.example .env.local
    ```
-   จากนั้นแก้ไข `.env.local`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   ```
+   แล้วใส่ค่า `NEXT_PUBLIC_SUPABASE_URL` และ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   จาก Supabase Dashboard > Settings > API
 
 3. รัน dev server:
    ```bash
@@ -31,31 +28,40 @@
 
 ## Deploy บน Vercel
 
-1. Push โปรเจกต์นี้ขึ้น GitHub repo
-2. Import repo เข้า Vercel
+1. Push โปรเจกต์นี้ขึ้น Git repository (GitHub/GitLab/Bitbucket)
+2. Import repository ใน Vercel
 3. ตั้งค่า Environment Variables ใน Vercel Project Settings ให้ตรงกับ `.env.local`:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy — ทดสอบว่า deploy สำเร็จโดยเข้าหน้าแรก แล้วกดลิงก์ไปยัง `/generate-qr`
-   และ `/kitchen`
+4. Deploy — Vercel จะรัน `npm run build` และ `npm run start` โดยอัตโนมัติ
 
-## โครงสร้างโปรเจกต์
+หลัง deploy สำเร็จ เข้าหน้าแรก (`/`) จะเห็นชื่อร้านและลิงก์ไปหน้า `/generate-qr` กับ `/kitchen`
+ซึ่งเป็นหน้าทดสอบว่า routing และ deploy ทำงานถูกต้อง
 
-```
-miketong-karaoke/
+---
+
+### 📁 สรุปรายชื่อไฟล์ทั้งหมดที่สร้างในโครงสร้างโปรเจกต์นี้
+
+```text
+mike-thong-karaoke/
 ├── app/
-│   ├── layout.js
-│   ├── page.js              # หน้าแรก
 │   ├── generate-qr/
-│   │   └── page.js          # placeholder
-│   └── kitchen/
-│       └── page.js          # placeholder
+│   │   └── page.js           # หน้าเปิดห้อง + สร้าง QR สำหรับพนักงาน
+│   ├── kitchen/
+│   │   └── page.js           # placeholder รอทำในขั้นถัดไป
+│   ├── layout.js
+│   └── page.js                # หน้าแรก
 ├── lib/
-│   └── supabaseClient.js    # Supabase client
+│   └── supabaseClient.js     # Supabase client
 ├── .env.local.example
 ├── .gitignore
 ├── next.config.js
 ├── package.json
-├── CLAUDE.md                 # โครงสร้าง DB, กฎการคิดเงิน, ข้อควรระวัง Next.js
+├── CLAUDE.md                  # บันทึกอ้างอิงสำคัญสำหรับ AI/นักพัฒนา
 └── README.md
 ```
+
+## ฐานข้อมูล (Supabase)
+
+ตารางทั้งหมด (`sessions`, `menu_categories`, `menu_items`, `orders`) มีอยู่แล้วใน Supabase
+รายละเอียดคอลัมน์และกติกาการคิดเงินแบบราคาต่อรายการ ดูที่ [`CLAUDE.md`](./CLAUDE.md)

@@ -1,109 +1,107 @@
-# ไมค์ทอง คาราโอเกะ — Project Notes
+# CLAUDE.md — บันทึกอ้างอิงสำหรับโปรเจกต์ "ไมค์ทอง คาราโอเกะ"
 
-โปรเจกต์ Next.js (App Router, JavaScript) สำหรับระบบสั่งเครื่องดื่ม/อาหารร้านคาราโอเกะ
-"ไมค์ทอง คาราโอเกะ" deploy บน Vercel เชื่อมต่อกับ Supabase
+ไฟล์นี้มีไว้ให้ AI (Claude) อ่านและจำไว้ใช้อ้างอิงตลอดทั้งโปรเจกต์
+ในขั้นตอนถัดไป ไม่ต้องรันคำสั่งสร้างตารางใด ๆ — ตารางเหล่านี้ **มีอยู่แล้วใน Supabase**
 
 ## Stack
-- Next.js (App Router, JavaScript — **ไม่ใช่ TypeScript**)
+- Next.js (App Router) — **JavaScript เท่านั้น ไม่ใช้ TypeScript**
 - React
-- Supabase (`@supabase/supabase-js`) ผ่าน `lib/supabaseClient.js`
-- Deploy: Vercel
+- Supabase (@supabase/supabase-js) ผ่าน `lib/supabaseClient.js`
+- Deploy บน Vercel
 
-## Environment Variables
-ตั้งค่าใน `.env.local` (ดูตัวอย่างที่ `.env.local.example`) และใน Vercel Project Settings:
+## Environment Variables (ตั้งค่าใน Vercel Project Settings ด้วย)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-## ⚠️ ข้อควรระวังสำคัญ: Dynamic Route Params เป็น Promise
-
-โปรเจกต์นี้ใช้ Next.js เวอร์ชันล่าสุด ซึ่ง **`params` (และ `searchParams`) ของ Dynamic Route
-เป็น Promise** ไม่ใช่ object ธรรมดาอีกต่อไป
-
-- ใน **Server Component**: ต้อง `await params` ก่อนใช้งาน
-  ```js
-  export default async function Page({ params }) {
-    const { roomId } = await params;
-    ...
-  }
-  ```
-- ใน **Client Component**: ต้อง unwrap ด้วย `use()` จาก React เสมอ
-  ```js
-  "use client";
-  import { use } from "react";
-
-  export default function Page({ params }) {
-    const { roomId } = use(params);
-    ...
-  }
-  ```
-
-กฎนี้สำคัญมากสำหรับขั้นตอนถัดไปที่จะสร้างหน้าสั่งเครื่องดื่ม/อาหาร (เช่น
-`/order/[roomId]` หรือ dynamic route อื่น ๆ) — ห้ามใช้ `params.xxx` ตรง ๆ โดยไม่ unwrap ก่อน
-
-## Database Schema (มีอยู่แล้วใน Supabase — ไม่ต้องสร้างใหม่)
-
-โปรเจกต์นี้อ้างอิงตารางที่มีอยู่แล้วในฐานข้อมูล Supabase ดังนี้:
+## โครงสร้างฐานข้อมูล (มีอยู่แล้ว — ห้ามสร้างซ้ำ)
 
 ### `sessions`
-| column        | type      | note                       |
-|---------------|-----------|----------------------------|
-| id            |           | primary key                |
-| room_number   |           | หมายเลขห้อง                |
-| status        |           | สถานะของ session           |
-| created_at    |           | เวลาที่สร้าง                |
+| column       | type      | หมายเหตุ                              |
+|--------------|-----------|-----------------------------------------|
+| id           | uuid/int  | primary key                             |
+| room_number  | text/int  | หมายเลขห้องคาราโอเกะ                    |
+| status       | text      | เช่น 'open', 'closed'                   |
+| created_at   | timestamp | เวลาที่เปิด session                     |
 
 ### `menu_categories`
-| column      | type | note              |
-|-------------|------|-------------------|
-| id          |      | primary key       |
-| name        |      | ชื่อหมวดหมู่เมนู     |
-| sort_order  |      | ลำดับการแสดงผล     |
+| column     | type      | หมายเหตุ                |
+|------------|-----------|--------------------------|
+| id         | uuid/int  | primary key              |
+| name       | text      | ชื่อหมวดหมู่เมนู          |
+| sort_order | int       | ลำดับการแสดงผล           |
 
 ### `menu_items`
-| column       | type | note                              |
-|--------------|------|------------------------------------|
-| id           |      | primary key                       |
-| category_id  |      | FK -> menu_categories.id          |
-| name         |      | ชื่อเมนู                            |
-| price        |      | ราคาต่อหน่วย                       |
+| column      | type      | หมายเหตุ                          |
+|-------------|-----------|-------------------------------------|
+| id          | uuid/int  | primary key                        |
+| category_id | uuid/int  | FK -> menu_categories.id           |
+| name        | text      | ชื่อเมนู                          |
+| price       | numeric   | ราคาต่อหน่วย                       |
 
 ### `orders`
-| column       | type   | note                                                        |
-|--------------|--------|---------------------------------------------------------------|
-| id           |        | primary key                                                  |
-| session_id   |        | FK -> sessions.id                                             |
-| room_number  |        | หมายเลขห้อง (denormalized)                                    |
-| items        | jsonb  | array ของรายการ แต่ละรายการมี `name`, `quantity`, `price`      |
-| status       |        | สถานะออเดอร์                                                  |
-| created_at   |        | เวลาที่สร้าง                                                  |
+| column      | type      | หมายเหตุ                                                      |
+|-------------|-----------|-----------------------------------------------------------------|
+| id          | uuid/int  | primary key                                                    |
+| session_id  | uuid/int  | FK -> sessions.id                                               |
+| room_number | text/int  | หมายเลขห้อง (denormalized ไว้เพื่อ query ง่าย)                  |
+| items       | jsonb     | array ของรายการ แต่ละรายการมี `{ name, quantity, price }`       |
+| status      | text      | เช่น 'pending', 'served', 'cancelled'                           |
+| created_at  | timestamp | เวลาที่สั่ง                                                     |
 
-## ⚠️ กฎการคิดเงิน (สำคัญ)
-
-ระบบนี้คิดเงินแบบ **"ราคาต่อรายการ" ไม่ใช่เหมาจ่ายต่อหัว**
-
-บิลรวมของแต่ละห้อง (room) คำนวณจาก:
-
-```
-บิลรวม = Σ (quantity × price) ของทุกรายการ (item) ในทุก order
-         ที่อยู่ภายใต้ session เดียวกัน
+ตัวอย่างรูปแบบ `items` ใน `orders`:
+```json
+[
+  { "name": "โค้ก", "quantity": 2, "price": 40 },
+  { "name": "เปปซี่", "quantity": 1, "price": 40 }
+]
 ```
 
-กล่าวคือ ต้อง loop ผ่านทุก `order` ที่มี `session_id` เดียวกัน แล้วสำหรับแต่ละ order
-loop ผ่าน array `items` (jsonb) แล้วรวม `quantity * price` ของทุกรายการเข้าด้วยกัน
-**ห้าม**คำนวณแบบเหมาจ่ายต่อหัว หรือคิดราคาคงที่ต่อ session
+## ⚠️ กติกาการคิดเงิน (สำคัญมาก)
 
-ตัวอย่าง (pseudo-code):
-```js
-const total = orders
-  .filter((o) => o.session_id === sessionId)
-  .flatMap((o) => o.items)
-  .reduce((sum, item) => sum + item.quantity * item.price, 0);
+ระบบนี้คิดเงินแบบ **"ราคาต่อรายการ" (per-item)** ไม่ใช่แบบเหมาจ่ายต่อหัว (ไม่ใช่ per-person / cover charge)
+
+**บิลรวมของแต่ละห้อง (session) คำนวณจาก:**
+
+```
+total = Σ (quantity × price)
 ```
 
-## Routes ที่มีในโครงเริ่มต้น (placeholder สำหรับทดสอบ deploy)
-- `/` — หน้าแรก แสดงชื่อร้านและลิงก์ทดสอบ
-- `/generate-qr` — placeholder
-- `/kitchen` — placeholder
+โดยรวมทุกรายการ (`items` array) ของ**ทุกออเดอร์** (`orders`) ที่มี `session_id` เดียวกัน
 
-หน้าสั่งเครื่องดื่ม/อาหาร (เช่น per-room ordering page) จะสร้างในขั้นตอนถัดไป
-โดยต้องปฏิบัติตามกฎ unwrap `params` ด้วย `use()` ตามที่ระบุไว้ข้างต้น
+ตัวอย่างเช่น ห้อง 5 มี session เดียว แต่สั่งอาหาร/เครื่องดื่ม 3 รอบ (3 แถวใน `orders`) —
+ต้องดึง `orders` ทั้ง 3 แถวที่ `session_id` ตรงกัน แล้ววนลูปรวม `quantity * price` ของทุก item ในทุกออเดอร์
+**ห้ามคิดเป็นค่าหัวคงที่คูณจำนวนคน** และห้ามคิดแค่ออเดอร์ล่าสุดออเดอร์เดียว
+
+## ⚠️ Next.js เวอร์ชันล่าสุด: params ของ Dynamic Route เป็น Promise
+
+โปรเจกต์นี้ใช้ Next.js เวอร์ชันล่าสุด ซึ่ง `params` (และ `searchParams`) ที่ส่งเข้า
+Page/Layout component ของ Dynamic Route **เป็น Promise** ไม่ใช่ object ตรง ๆ เหมือนเวอร์ชันเก่า
+
+เวลาสร้างหน้าแบบ dynamic route (เช่น `/order/[room]/page.js` ที่จะสร้างในขั้นตอนถัดไป)
+**ต้อง unwrap ด้วย `use()` จาก React เสมอ** ตัวอย่าง:
+
+```jsx
+"use client";
+import { use } from "react";
+
+export default function OrderPage({ params }) {
+  const { room } = use(params); // ต้อง unwrap ด้วย use() ก่อนใช้งาน
+  // ...
+}
+```
+
+หรือถ้าเป็น Server Component (async function) ให้ `await params` แทน:
+
+```jsx
+export default async function OrderPage({ params }) {
+  const { room } = await params;
+  // ...
+}
+```
+
+**ห้ามอ่าน `params.room` ตรง ๆ โดยไม่ unwrap** เพราะจะพังหรือ error บน Next.js เวอร์ชันนี้
+
+## หน้าที่มีอยู่แล้ว (placeholder สำหรับทดสอบ deploy)
+- `/` — หน้าแรก แสดงชื่อร้านและลิงก์ไปหน้าอื่น
+- `/generate-qr` — placeholder รอสร้างฟีเจอร์สร้าง QR ต่อห้อง
+- `/kitchen` — placeholder รอสร้างฟีเจอร์แสดงออเดอร์แบบเรียลไทม์
