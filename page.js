@@ -157,15 +157,37 @@ export default function GenerateQrPage() {
 
   function handleCopyLink() {
     const url = `${window.location.origin}/order/${qrRoom}`;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {
-        setCopied(false);
+
+    const markCopied = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(markCopied).catch(() => {
+        fallbackCopy(url, markCopied);
       });
+    } else {
+      // เบราว์เซอร์เก่า/ไม่ใช่ https -> ใช้วิธี select + execCommand แทน
+      fallbackCopy(url, markCopied);
+    }
+  }
+
+  function fallbackCopy(text, onSuccess) {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      onSuccess();
+    } catch {
+      setCopied(false);
+    }
   }
 
   const orderUrl =
@@ -202,10 +224,16 @@ export default function GenerateQrPage() {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 value={room}
-                onChange={(e) => setRoom(e.target.value)}
+                onChange={(e) => {
+                  // กรองให้เหลือแต่ตัวเลข กันพนักงานพิมพ์ผิดตั้งแต่ต้นทาง
+                  const digitsOnly = e.target.value.replace(/\D/g, "");
+                  setRoom(digitsOnly);
+                  if (error) setError("");
+                }}
                 placeholder="เช่น 3"
                 style={styles.input}
                 disabled={loading || view === "warning"}
+                maxLength={4}
                 autoFocus
               />
 
@@ -216,9 +244,10 @@ export default function GenerateQrPage() {
                   type="submit"
                   style={{
                     ...styles.primaryButton,
-                    opacity: loading ? 0.7 : 1,
+                    opacity: loading || !room ? 0.5 : 1,
+                    cursor: loading || !room ? "not-allowed" : "pointer",
                   }}
-                  disabled={loading}
+                  disabled={loading || !room}
                 >
                   {loading ? "กำลังตรวจสอบ..." : "เปิดห้อง"}
                 </button>
